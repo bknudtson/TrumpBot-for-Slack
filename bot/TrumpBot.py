@@ -27,17 +27,14 @@ watchedTS = {} # Dictionary object for tracking the most recently reviewed messa
 ##################  SETUP THESE VARIABLES FOR EACH BOT ##################
 
 # Set your User Token for the appropriate Slack team (each team has it's own)
-userToken = "xoxp-8686754065-8707667493-151099928103-378724e0be610791c775d7c0c3f54256" 
+userToken = "<insert your Slack user token here>"
 
-# Create variables for each of your gropus/channels you might want the bot to watch
-socialRockstarsID = "G09E3SGEQ"
-brianPlaygroundID = "G1Y1HRYEP"
-eucGurusID = "G1HTXUX3L"
-vdiBitchingID = "G0KLMHJUS"
-politicsID = "G3UUUTFV2"
+# Create variables for each of your groups/channels you might want the bot to watch
+groupVariable1 = "<insert your groupID here>"
+groupVariable2 = "<insert your groupID here>"
 
 # Add the group/channel variables to watchedGroupArray to enable the bot to watch
-watchedGroupArray = [brianPlaygroundID, politicsID] # Array of all the groups for this bot to watch
+watchedGroupArray = [groupVariable1, groupVariable2] # Array of all the groups for this bot to watch
 
 # Create the personality of the bot (avatar and name)
 botAvatar = "https://68.media.tumblr.com/avatar_2ffaeb9f55ec_128.png"

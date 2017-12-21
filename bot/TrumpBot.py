@@ -1,4 +1,4 @@
-import time, datetime, json, re, os, random, sys
+import time, datetime, json, re, os, random, sys, ConfigParser
 from slackclient import SlackClient
 
 # Time Management
@@ -14,61 +14,44 @@ sys.stdout = f
 orig_stderr = sys.stderr
 sys.stderr = f
 
-#print ("-----------------START-----------------")
+print ("-----------------START-----------------")
 #print (str(datetime.datetime.now()))
 #print ("Now: "+now.strftime('%m/%d/%Y %H%M%S')+" and Then: "+then.strftime('%m/%d/%Y %H%M%S'))
 
 # ----Useful Variables----
-
-runCount = 1
-watchedTS = {} # Dictionary object for tracking the most recently reviewed message in each group using the Group ID as index
+runCount = 1   # Used to control the looping of this script. See the end to determine if script runs continuously or once per execution (when using a scheduled task).
+watchedTS = {} # Dictionary object for tracking the most recently reviewed message in each group using the Group ID as index.
 
 #########################################################################
-##################  SETUP THESE VARIABLES FOR EACH BOT ##################
+##################   RETRIEVE AND SETUP THE VARIABLES  ##################
 
+# Retrieve ini file configurations
+config = ConfigParser.ConfigParser()
+config.read('TrumpBot.ini')
+#print (config.get("TrumpBot","userToken"))
+	
 # Set your User Token for the appropriate Slack team (each team has it's own)
-userToken = "<insert your Slack user token here>"
+userToken = config.get("TrumpBot","userToken")
 
-# Create variables for each of your groups/channels you might want the bot to watch
-groupVariable1 = "<insert your groupID here>"
-groupVariable2 = "<insert your groupID here>"
-
-# Add the group/channel variables to watchedGroupArray to enable the bot to watch
-watchedGroupArray = [groupVariable1, groupVariable2] # Array of all the groups for this bot to watch
+# Add the group/channel IDs to watchedGroupArray to enable the bot to watch
+watchedGroupArray = config.get("TrumpBot","watchedGroupList").split(",")
 
 # Create the personality of the bot (avatar and name)
-botAvatar = "https://68.media.tumblr.com/avatar_2ffaeb9f55ec_128.png"
-botName = "Donald Drumpf"
+botAvatar = config.get("TrumpBot","botAvatar")
+botName = config.get("TrumpBot","botName")
 
 # Create list of words the bot should react to
-reactionWords = ["donald","trump","drumpf"]
+reactionWords = config.get("TrumpBot","reactionWords").split(",")
 
 # Create a list of context aware words to narrow down the responses
-subReactionWords = ["ivanka","dutch","iq","women","hilary","twitter","rocket"]
+subReactionWords = config.get("TrumpBot","subReactionWords").split(",")
 
-# Create list of pseudo-quotes the bot should react with (use 'username' if you want the bot to react to the author of the post)
-botQuotesFile = file('TrumpQuotes.txt','r')
+# Retrieve list of quotes the bot should react with (use 'username' if you want the bot to react to the author of the post)
+botQuotesFile = file(config.get("TrumpBot","botQuotesFile"),'r')
 botQuotes = botQuotesFile.readlines()
-#botQuotes = ["So, I hear the Dutch have _the best_ wishes. They're great.  It is true.", 
-#				"An extremely credible source has called my office and told me that username's birth certificate is a fraud",
-#				"Nobody builds walls better than me, believe me.",
-#				"The beauty of me is that I am very rich.",
-#				"One of they key problems today is that politics is such a disgrace. Good people don't go into government.",
-#				"My fingers are long and beautiful, as, it has been well documented, are various other parts of my body.",
-#				"I've said if Ivanka weren't my daughter, perhaps I'd be dating her.",
-#				"I think the only difference between me and the other candidates is that I'm more honest and my women are more beautiful.",
-#				"My Twitter has become so powerful that I can actually make my enemies tell the truth.",
-#				"My IQ is one of the highest - and you all know it! Please don't feel so stupid or insecure; it's not your fault.",
-#				"Thanks sweetie. That's nice.",
-#				"Number one, I have great respect for women. I was the one that really broke the glass ceiling on behalf of women, more than anybody in the construction industry.",
-#				"You know, it really doesn't matter what the media write as long as you've got a young, and beautiful, piece of ass."]
 
 #################################### END VARIABLE SETUP ####################################
 ############################################################################################
-
-# Open tracking file
-#messageTracker = file('trumpBotMessageTracker.txt','w')
-
 
 
 recentTS = time.mktime(then.timetuple())
@@ -82,7 +65,7 @@ for watchedGroup in watchedGroupArray:
 sc = SlackClient(userToken)
 #print (sc.api_call("api.test"))
 
-# Get me the list of (public) channels
+# Get the list of (public) channels
 channelObj = sc.api_call("channels.list")
 channels = channelObj["channels"]
 #for channel in channels:
@@ -93,7 +76,6 @@ groupObj = sc.api_call("groups.list")
 groups = groupObj["groups"]
 #for group in groups:
 #	print (group["name"]+" - "+group["id"])
-
 
 #print ("Watching these group IDs: "+str(watchedGroupArray))
 
@@ -146,13 +128,12 @@ while runCount == 1:
 				#print ("-----Message:")	
 				#print (userName+": "+messageText)
 
-	# 			# Check to see if any of the reaction words are used in the message
-	# 			if ("dheeraj" in messageText.lower()) or ("pandey" in messageText.lower()):
+	 			# Check to see if any of the reaction words are used in the message
 				if (any(substring.lower() in messageText.lower() for substring in reactionWords)):
 					print (userName+" used "+str(reactionWords)+" in: '"+messageText+"'")
 
-	# 				# Create message
-	# 				#print ("Full list: " + str(len(abeQuotes)))
+	 				# Select a reply message
+	 				#print ("Full list: " + str(len(botQuotes)))
 
 					if (any(substring.lower() in messageText.lower() for substring in subReactionWords)):
 						matchedSubReactionWords = [triggerWord for triggerWord in subReactionWords if (triggerWord.lower() in messageText.lower())]
@@ -166,51 +147,10 @@ while runCount == 1:
 								if (reactionWord.lower() in quote.lower()):
 									#print ("************Match!")
 									filteredQuotes.append(quote)
-
-
-
-
-						#filteredQuotes = [quote for quote in botQuotes if (any(substring in quote for substring in matchedSubReactionWords))]
-
-
-						#print (str(filteredQuotes))
-
-
-					# Use if construct to provide context aware responses for special words
-					# if "fpga" in messageText.lower():
-					# 	filteredQuotes = [quote for quote in botQuotes if ("fpga" in quote.lower())]
-						
-	# 				elif "baloney" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("baloney" in quote.lower())]
-						
-	# 				elif "invisible" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("invisible" in quote.lower())]
-						
-	# 				elif "webscale" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("webscale" in quote.lower())]
-								
-	# 				elif "women" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("women" in quote.lower())]
-
-	# 				elif "spof" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("spof" in quote.lower())]
-						
-	# 				elif "vmware" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("vmware" in quote.lower())]
-
-	# 				elif "people" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("spof" in quote.lower())]
-
-	# 				elif "middle" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("middle" in quote.lower())]
-
-	# 				elif "fud" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("fud" in quote.lower())]
-
-	# 				elif "compet" in messageText.lower():
-	# 					filteredQuotes = [quote for quote in abeQuotes if ("compet" in quote.lower())]
-						
 					else:
+						filteredQuotes = botQuotes
+						
+					if (len(filteredQuotes) <= 0):
 						filteredQuotes = botQuotes
 
 					# Let's review the list we created
@@ -219,7 +159,7 @@ while runCount == 1:
 					# Create random index number based on the size of the quotes list to randomly select response
 					randomIndex = random.randint(0,len(filteredQuotes)-1)
 					
-	# 				print (randomIndex)
+	 				#print ("Random number selected: " + RandomIndex)
 					replyMessage = re.sub("username",userName,filteredQuotes[randomIndex])
 
 					# Post a reply in the room
@@ -236,10 +176,10 @@ while runCount == 1:
 				#print ("Stored message TS"+message["ts"])
 				#messageTracker.write(message["ts"])
 
-	# Maintain run count
+	# Maintain run count - Comment out this line if you want the script to run continuously. I have found that this will cause the script to fail due to too many connection attempts to Slack API.
 	runCount += 1
 
-	# Take a break and wait for some more messages
+	# Take a break and wait for some more messages - Useful when you comment out the line above to run the script continuously.
 	#time.sleep(30)
 
 #print ("-----------------END-----------------")
